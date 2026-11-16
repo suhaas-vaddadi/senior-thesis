@@ -1,0 +1,30 @@
+name: Build thesis PDF
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: xu-cheng/latex-action@v3
+        with:
+          root_file: main.tex
+      # Every branch: downloadable from the run's Summary page.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: thesis-pdf
+          path: main.pdf
+      # main only: replace the "pdf" release so the README link always serves the latest build.
+      - if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete pdf --yes --cleanup-tag || true
+          gh release create pdf main.pdf --target "$GITHUB_SHA" \
+            --title "Thesis PDF (latest)" --notes "Built from $GITHUB_SHA"
